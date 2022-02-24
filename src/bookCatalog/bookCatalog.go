@@ -93,6 +93,13 @@ func (bc *BookCatalog) GetAllAuthors(page int) []Authors {
 	return authorsArray
 }
 
+func (bc *BookCatalog) CreateAuthor(a Authors) {
+	_, err := bc.db.Exec("INSERT INTO authors VALUES (0, ?, ?, ?, ?)", a.FirstName, a.LastName, a.Born, a.Died)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (bc *BookCatalog) GetAllBooks(page int) []Books {
 	var len int
 	err := bc.db.QueryRow("SELECT COUNT(book_id) FROM books").Scan(&len)

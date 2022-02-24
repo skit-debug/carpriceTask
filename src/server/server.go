@@ -31,7 +31,13 @@ func renderJSON(w http.ResponseWriter, v interface{}) {
 }
 
 func createAuthorHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("createAuthorHandler"))
+	a := bookCatalog.Authors{}
+	err := json.NewDecoder(req.Body).Decode(&a)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	catalog.CreateAuthor(a)
+	w.Write([]byte("createAuthorHandler: Done"))
 }
 
 func getAllAuthorsHandler(w http.ResponseWriter, req *http.Request) {
