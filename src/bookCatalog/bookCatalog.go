@@ -8,11 +8,31 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+const pageSize = 5
+
 type BookCatalog struct {
 	db       *sql.DB
 	user     string
 	password string
 	dbName   string
+}
+
+type Authors struct {
+	AuthorID  int    `json:"author_id"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Born      string `json:"born"`
+	Died      string `json:"died"`
+	BooksNo   int    `json:"books_no"`
+}
+
+type Books struct {
+	BookID         int    `json:"book_id"`
+	Title          string `json:"title"`
+	ReleaseYear    int    `json:"release_year"`
+	Abstract       string `json:"abstract"`
+	AuthorID       int    `json:"author_id"`
+	AuthorLastName string `json:"author_last_name"`
 }
 
 func (bc *BookCatalog) OpenCatalog(ctx context.Context, user string, password string, dbName string) {
@@ -33,32 +53,83 @@ func (bc *BookCatalog) CloseCatalog() {
 	bc.db.Close()
 }
 
-func (bc *BookCatalog) Get() {
-	row := bc.db.QueryRow("SELECT last_name FROM authors WHERE author_id=1")
-	var a string
-	row.Scan(&a)
-	/*
+func (bc *BookCatalog) GetAllAuthors(page int) []Authors {
+	var len int
+	err := bc.db.QueryRow("SELECT COUNT(author_id) FROM authors").Scan(&len)
+	if err != nil {
+		log.Fatal(err)
+	}
+	maxPages := len / pageSize
+	if len%pageSize != 0 {
+		maxPages = maxPages + 1
+	}
+	if page > maxPages {
+		return []Authors{}
+	}
+	rows, err := bc.db.Query("SELECT * FROM authors LIMIT ? OFFSET ?", pageSize, pageSize*(page-1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var authorsArray []Authors
+
+	for rows.Next() {
+		row := Authors{}
+		err = rows.Scan(&row.AuthorID, &row.FirstName, &row.LastName, &row.Born, &row.Died)
 		if err != nil {
-		    if err == sql.ErrNoRows {
-		        fmt.Println("Zero rows found")
-		    } else {
-		        panic(err)
-		    }
-		}*/
+			row.Died = ""
+		}
+		var booksNo int
+		err = bc.db.QueryRow("SELECT COUNT(book_id) FROM books WHERE author_id=?", row.AuthorID).Scan(&booksNo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		row.BooksNo = booksNo
+
+		authorsArray = append(authorsArray, row)
+	}
+
+	return authorsArray
 }
 
-type Authors struct {
-	AuthorID  int    `json:"author_id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	//Born      time.Date `json:"born"`
-	//Died      time.Date `json:"died"`
-}
+func (bc *BookCatalog) GetAllBooks(page int) []Books {
+	var len int
+	err := bc.db.QueryRow("SELECT COUNT(book_id) FROM books").Scan(&len)
+	if err != nil {
+		log.Fatal(err)
+	}
+	maxPages := len / pageSize
+	if len%pageSize != 0 {
+		maxPages = maxPages + 1
+	}
+	if page > maxPages {
+		return []Books{}
+	}
 
-type Books struct {
-	BookID      int    `json:"book_id"`
-	Title       string `json:"title"`
-	ReleaseYear int    `json:"release_year"`
-	Abstract    string `json:"abstract"`
-	AuthorID    int    `json:"author_id"`
+	rows, err := bc.db.Query("SELECT * FROM books LIMIT ? OFFSET ?", pageSize, pageSize*(page-1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var booksArray []Books
+
+	for rows.Next() {
+		row := Books{}
+		err = rows.Scan(&row.BookID, &row.Title, &row.ReleaseYear, &row.Abstract, &row.AuthorID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var AuthorLastName string
+		err = bc.db.QueryRow("SELECT last_name FROM authors WHERE author_id=?", row.AuthorID).Scan(&AuthorLastName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		row.AuthorLastName = AuthorLastName
+
+		booksArray = append(booksArray, row)
+	}
+
+	return booksArray
 }

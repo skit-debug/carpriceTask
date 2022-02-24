@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"main/src/bookCatalog"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 )
@@ -18,12 +20,27 @@ const (
 
 var catalog bookCatalog.BookCatalog
 
+func renderJSON(w http.ResponseWriter, v interface{}) {
+	js, err := json.Marshal(v)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func createAuthorHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("createAuthorHandler"))
 }
 
 func getAllAuthorsHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("getAllAuthorsHandler"))
+	page := req.URL.Query().Get("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+	renderJSON(w, catalog.GetAllAuthors(p))
 }
 
 func getAuthorHandler(w http.ResponseWriter, req *http.Request) {
@@ -48,7 +65,12 @@ func createBookHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func getAllBooksHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("getAllBooksHandler"))
+	page := req.URL.Query().Get("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+	renderJSON(w, catalog.GetAllBooks(p))
 }
 
 func getBookHandler(w http.ResponseWriter, req *http.Request) {
@@ -95,7 +117,6 @@ func StartServer(ctx context.Context) {
 	router.HandleFunc("/books/{id:[0-9]+}/", deleteBookHandler).Methods("DELETE")
 
 	catalog.OpenCatalog(ctx, user, password, dbName)
-	catalog.Get()
 
 	err := http.ListenAndServe(port, router)
 	if err != nil {
