@@ -51,23 +51,35 @@ func getAllAuthorsHandler(w http.ResponseWriter, req *http.Request) {
 
 func getAuthorHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("getAuthorHandler"))
-
 }
 
 func changeAuthorHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("changeAuthorHandler"))
-}
-
-func deleteAllAuthorsHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("deleteAllAuthorsHandler"))
+	a := bookCatalog.Authors{}
+	err := json.NewDecoder(req.Body).Decode(&a)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	catalog.ChangeAuthor(a)
+	w.Write([]byte("changeAuthorHandler: Done"))
 }
 
 func deleteAuthorHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("deleteAuthorHandler"))
+	id, _ := strconv.Atoi(mux.Vars(req)["id"])
+	err := catalog.DeleteAuthor(id)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+	w.Write([]byte("deleteAuthorHandler: Done"))
 }
 
 func createBookHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("createBookHandler"))
+	b := bookCatalog.Books{}
+	err := json.NewDecoder(req.Body).Decode(&b)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	catalog.CreateBook(b)
+	w.Write([]byte("createBookHandler: Done"))
 }
 
 func getAllBooksHandler(w http.ResponseWriter, req *http.Request) {
@@ -84,15 +96,22 @@ func getBookHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func changeBookHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("changeBookHandler"))
-}
-
-func deleteAllBooksHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("deleteAllBooksHandler"))
+	b := bookCatalog.Books{}
+	err := json.NewDecoder(req.Body).Decode(&b)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	catalog.ChangeBook(b)
+	w.Write([]byte("changeBookHandler: Done"))
 }
 
 func deleteBookHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("deleteBookHandler"))
+	id, _ := strconv.Atoi(mux.Vars(req)["id"])
+	err := catalog.DeleteBook(id)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+	}
+	w.Write([]byte("deleteBookHandler: Done"))
 }
 
 func StartServer(ctx context.Context) {
@@ -111,15 +130,13 @@ func StartServer(ctx context.Context) {
 	router.HandleFunc("/authors/", createAuthorHandler).Methods("POST")
 	router.HandleFunc("/authors/", getAllAuthorsHandler).Methods("GET")
 	router.HandleFunc("/authors/{id:[0-9]+}/", getAuthorHandler).Methods("GET")
-	router.HandleFunc("/authors/{id:[0-9]+}/", changeAuthorHandler).Methods("PUT")
-	router.HandleFunc("/authors/", deleteAllAuthorsHandler).Methods("DELETE")
+	router.HandleFunc("/authors/", changeAuthorHandler).Methods("PUT")
 	router.HandleFunc("/authors/{id:[0-9]+}/", deleteAuthorHandler).Methods("DELETE")
 
 	router.HandleFunc("/books/", createBookHandler).Methods("POST")
 	router.HandleFunc("/books/", getAllBooksHandler).Methods("GET")
 	router.HandleFunc("/books/{id:[0-9]+}/", getBookHandler).Methods("GET")
-	router.HandleFunc("/books/{id:[0-9]+}/", changeBookHandler).Methods("PUT")
-	router.HandleFunc("/books/", deleteAllBooksHandler).Methods("DELETE")
+	router.HandleFunc("/books/", changeBookHandler).Methods("PUT")
 	router.HandleFunc("/books/{id:[0-9]+}/", deleteBookHandler).Methods("DELETE")
 
 	catalog.OpenCatalog(ctx, user, password, dbName)
@@ -127,6 +144,5 @@ func StartServer(ctx context.Context) {
 	err := http.ListenAndServe(port, router)
 	if err != nil {
 		log.Fatal(err)
-		panic(err)
 	}
 }

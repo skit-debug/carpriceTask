@@ -100,6 +100,21 @@ func (bc *BookCatalog) CreateAuthor(a Authors) {
 	}
 }
 
+func (bc *BookCatalog) ChangeAuthor(a Authors) {
+	_, err := bc.db.Exec("UPDATE authors SET first_name=?, last_name=?, born=?, died=? WHERE author_id=?", a.FirstName, a.LastName, a.Born, a.Died, a.AuthorID)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (bc *BookCatalog) DeleteAuthor(id int) error {
+	_, err := bc.db.Exec("DELETE FROM authors WHERE author_id=?", id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (bc *BookCatalog) GetAllBooks(page int) []Books {
 	var len int
 	err := bc.db.QueryRow("SELECT COUNT(book_id) FROM books").Scan(&len)
@@ -139,4 +154,26 @@ func (bc *BookCatalog) GetAllBooks(page int) []Books {
 	}
 
 	return booksArray
+}
+
+func (bc *BookCatalog) CreateBook(b Books) {
+	_, err := bc.db.Exec("INSERT INTO books VALUES (0, ?, ?, ?, ?)", b.Title, b.ReleaseYear, b.Abstract, b.AuthorID)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (bc *BookCatalog) ChangeBook(b Books) {
+	_, err := bc.db.Exec("UPDATE books SET title=?, release_year=?, abstract=?, author_id=? WHERE book_id=?", b.Title, b.ReleaseYear, b.Abstract, b.AuthorID, b.BookID)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (bc *BookCatalog) DeleteBook(id int) error {
+	_, err := bc.db.Exec("DELETE FROM books WHERE book_id=?", id)
+	if err != nil {
+		return err
+	}
+	return nil
 }
