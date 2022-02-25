@@ -93,6 +93,47 @@ func (bc *BookCatalog) GetAllAuthors(page int) []Authors {
 	return authorsArray
 }
 
+func (bc *BookCatalog) SearchAuthors(condition string, page int) []Authors {
+	var len int
+	err := bc.db.QueryRow("SELECT COUNT(author_id) FROM authors WHERE " + condition).Scan(&len)
+	if err != nil {
+		log.Fatal(err)
+	}
+	maxPages := len / pageSize
+	if len%pageSize != 0 {
+		maxPages = maxPages + 1
+	}
+	if page > maxPages {
+		return []Authors{}
+	}
+
+	rows, err := bc.db.Query("SELECT * FROM authors WHERE "+condition+" LIMIT ? OFFSET ?", pageSize, pageSize*(page-1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var authorsArray []Authors
+
+	for rows.Next() {
+		row := Authors{}
+		err = rows.Scan(&row.AuthorID, &row.FirstName, &row.LastName, &row.Born, &row.Died)
+		if err != nil {
+			row.Died = ""
+		}
+		var booksNo int
+		err = bc.db.QueryRow("SELECT COUNT(book_id) FROM books WHERE author_id=?", row.AuthorID).Scan(&booksNo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		row.BooksNo = booksNo
+
+		authorsArray = append(authorsArray, row)
+	}
+
+	return authorsArray
+}
+
 func (bc *BookCatalog) CreateAuthor(a Authors) {
 	_, err := bc.db.Exec("INSERT INTO authors VALUES (0, ?, ?, ?, ?)", a.FirstName, a.LastName, a.Born, a.Died)
 	if err != nil {
@@ -176,4 +217,45 @@ func (bc *BookCatalog) DeleteBook(id int) error {
 		return err
 	}
 	return nil
+}
+
+func (bc *BookCatalog) SearchBooks(condition string, page int) []Books {
+	var len int
+	err := bc.db.QueryRow("SELECT COUNT(book_id) FROM books WHERE " + condition).Scan(&len)
+	if err != nil {
+		log.Fatal(err)
+	}
+	maxPages := len / pageSize
+	if len%pageSize != 0 {
+		maxPages = maxPages + 1
+	}
+	if page > maxPages {
+		return []Books{}
+	}
+
+	rows, err := bc.db.Query("SELECT * FROM books WHERE "+condition+" LIMIT ? OFFSET ?", pageSize, pageSize*(page-1))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var booksArray []Books
+
+	for rows.Next() {
+		row := Books{}
+		err = rows.Scan(&row.BookID, &row.Title, &row.ReleaseYear, &row.Abstract, &row.AuthorID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var AuthorLastName string
+		err = bc.db.QueryRow("SELECT last_name FROM authors WHERE author_id=?", row.AuthorID).Scan(&AuthorLastName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		row.AuthorLastName = AuthorLastName
+
+		booksArray = append(booksArray, row)
+	}
+
+	return booksArray
 }

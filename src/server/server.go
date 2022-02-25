@@ -50,7 +50,32 @@ func getAllAuthorsHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func getAuthorHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("getAuthorHandler"))
+	page := req.URL.Query().Get("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+
+	id := req.URL.Query().Get("id")
+	firstName := req.URL.Query().Get("first_name")
+	lastName := req.URL.Query().Get("last_name")
+
+	if id != "" {
+		renderJSON(w, catalog.SearchAuthors("author_id="+id, p))
+		return
+	}
+
+	if firstName != "" {
+		renderJSON(w, catalog.SearchAuthors("first_name="+firstName, p))
+		return
+	}
+
+	if lastName != "" {
+		renderJSON(w, catalog.SearchAuthors("last_name="+lastName, p))
+		return
+	}
+
+	w.Write([]byte("Invalid search condition"))
 }
 
 func changeAuthorHandler(w http.ResponseWriter, req *http.Request) {
@@ -92,7 +117,32 @@ func getAllBooksHandler(w http.ResponseWriter, req *http.Request) {
 }
 
 func getBookHandler(w http.ResponseWriter, req *http.Request) {
-	w.Write([]byte("getBookHandler"))
+	page := req.URL.Query().Get("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+
+	id := req.URL.Query().Get("id")
+	title := req.URL.Query().Get("title")
+	releaseYear := req.URL.Query().Get("release_year")
+
+	if id != "" {
+		renderJSON(w, catalog.SearchBooks("book_id="+id, p))
+		return
+	}
+
+	if title != "" {
+		renderJSON(w, catalog.SearchBooks("title="+title, p))
+		return
+	}
+
+	if releaseYear != "" {
+		renderJSON(w, catalog.SearchBooks("release_year="+releaseYear, p))
+		return
+	}
+
+	w.Write([]byte("Invalid search condition"))
 }
 
 func changeBookHandler(w http.ResponseWriter, req *http.Request) {
@@ -129,13 +179,13 @@ func StartServer(ctx context.Context) {
 
 	router.HandleFunc("/authors/", createAuthorHandler).Methods("POST")
 	router.HandleFunc("/authors/", getAllAuthorsHandler).Methods("GET")
-	router.HandleFunc("/authors/{id:[0-9]+}/", getAuthorHandler).Methods("GET")
+	router.HandleFunc("/authors/search/", getAuthorHandler).Methods("GET")
 	router.HandleFunc("/authors/", changeAuthorHandler).Methods("PUT")
 	router.HandleFunc("/authors/{id:[0-9]+}/", deleteAuthorHandler).Methods("DELETE")
 
 	router.HandleFunc("/books/", createBookHandler).Methods("POST")
 	router.HandleFunc("/books/", getAllBooksHandler).Methods("GET")
-	router.HandleFunc("/books/{id:[0-9]+}/", getBookHandler).Methods("GET")
+	router.HandleFunc("/books/search/", getBookHandler).Methods("GET")
 	router.HandleFunc("/books/", changeBookHandler).Methods("PUT")
 	router.HandleFunc("/books/{id:[0-9]+}/", deleteBookHandler).Methods("DELETE")
 
