@@ -40,7 +40,7 @@ func (bc *BookCatalog) OpenCatalog(ctx context.Context, user string, password st
 	bc.password = password
 	bc.dbName = dbName
 	var err error
-	bc.db, err = sql.Open("mysql", user+":"+password+"@/"+dbName)
+	bc.db, err = sql.Open("mysql", user+":"+password+"@tcp(carpricetask_mysql)/"+dbName)
 	if err != nil {
 		log.Fatal(err)
 	}

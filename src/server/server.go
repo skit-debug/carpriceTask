@@ -176,6 +176,10 @@ func deleteBookHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("deleteBookHandler: Done"))
 }
 
+func test(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("111"))
+}
+
 func StartServer(ctx context.Context) {
 	go func() {
 		select {
@@ -202,6 +206,8 @@ func StartServer(ctx context.Context) {
 	router.HandleFunc("/books/{id:[0-9]+}/", deleteBookHandler).Methods("DELETE")
 
 	router.HandleFunc("/books/search/{author}/", getBookByAuthorHandler).Methods("GET")
+
+	router.HandleFunc("/test/", test).Methods("GET")
 
 	catalog.OpenCatalog(ctx, user, password, dbName)
 
