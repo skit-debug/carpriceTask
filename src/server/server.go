@@ -145,6 +145,18 @@ func getBookHandler(w http.ResponseWriter, req *http.Request) {
 	w.Write([]byte("Invalid search condition"))
 }
 
+func getBookByAuthorHandler(w http.ResponseWriter, req *http.Request) {
+	page := req.URL.Query().Get("page")
+	if page == "" {
+		page = "1"
+	}
+	p, _ := strconv.Atoi(page)
+
+	author := mux.Vars(req)["author"]
+
+	renderJSON(w, catalog.SearchBooksByAuthor(author, p))
+}
+
 func changeBookHandler(w http.ResponseWriter, req *http.Request) {
 	b := bookCatalog.Books{}
 	err := json.NewDecoder(req.Body).Decode(&b)
@@ -188,6 +200,8 @@ func StartServer(ctx context.Context) {
 	router.HandleFunc("/books/search/", getBookHandler).Methods("GET")
 	router.HandleFunc("/books/", changeBookHandler).Methods("PUT")
 	router.HandleFunc("/books/{id:[0-9]+}/", deleteBookHandler).Methods("DELETE")
+
+	router.HandleFunc("/books/search/{author}/", getBookByAuthorHandler).Methods("GET")
 
 	catalog.OpenCatalog(ctx, user, password, dbName)
 

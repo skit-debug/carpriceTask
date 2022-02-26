@@ -8,7 +8,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-const pageSize = 5
+const pageSize int = 5
 
 type BookCatalog struct {
 	db       *sql.DB
@@ -242,6 +242,41 @@ func (bc *BookCatalog) SearchBooks(condition string, page int) []Books {
 	var booksArray []Books
 
 	for rows.Next() {
+		row := Books{}
+		err = rows.Scan(&row.BookID, &row.Title, &row.ReleaseYear, &row.Abstract, &row.AuthorID)
+		if err != nil {
+			log.Fatal(err)
+		}
+		var AuthorLastName string
+		err = bc.db.QueryRow("SELECT last_name FROM authors WHERE author_id=?", row.AuthorID).Scan(&AuthorLastName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		row.AuthorLastName = AuthorLastName
+
+		booksArray = append(booksArray, row)
+	}
+
+	return booksArray
+}
+
+func (bc *BookCatalog) SearchBooksByAuthor(author string, page int) []Books {
+	rows, err := bc.db.Query("SELECT * FROM books WHERE author_id IN (SELECT author_id from authors WHERE last_name=\"" + author + "\")")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var booksArray []Books
+
+	i := -1
+
+	for rows.Next() {
+		i = i + 1
+		if !((i >= (page-1)*pageSize) && (i < page*pageSize)) {
+			continue
+		}
+
 		row := Books{}
 		err = rows.Scan(&row.BookID, &row.Title, &row.ReleaseYear, &row.Abstract, &row.AuthorID)
 		if err != nil {
