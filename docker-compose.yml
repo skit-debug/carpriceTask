@@ -1,24 +1,42 @@
 version: "3.7"
 
 services:
+  db:
+    container_name: carpricetask_mysql
+    build: 
+      context: .
+      dockerfile: db.Dockerfile
+    platform: linux/x86_64
+    restart: always
+    networks:
+      - default
+    ports:
+      - 3306:3306   
+    environment: 
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: BOOK_CATALOG  
+    volumes:
+      - mysql-data:/var/lib/mysql
   app:
+    container_name: carpricetask_app
+    build: 
+      context: .
+      dockerfile: app.Dockerfile
     depends_on:
-      - mysql
-    image: carpricetask
-    container_name: carpricetask
+      - db
+    restart: always
+    networks:
+      - default
     ports:
       - 8080:8080
-    working_dir: /app
     environment:
       MYSQL_HOST: mysql
       MYSQL_USER: root
       MYSQL_PASSWORD: password
-      MYSQL_DB: BOOK_CATALOG
-  mysql:
-    image: carpricetask_mysql
-    ports:
-      - 3306:3306
-    container_name: carpricetask_mysql
-    environment: 
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: BOOK_CATALOG
+      MYSQL_DB: BOOK_CATALOG  
+    
+volumes:
+  mysql-data:
+
+networks:
+   default:
